@@ -1659,12 +1659,12 @@
       unidades.push({ top: r.top - recetaTop, bottom: r.bottom - recetaTop, evitarCorte: !!evitarCorte });
     }
     // Un bloque suelto (párrafo, tabla, lista) dentro de una caja de texto libre
-    // (informe-texto, indicaciones-texto). Las tablas y listas SIEMPRE se miden
-    // fila por fila / ítem por ítem (evitarCorte) sin importar si vienen de una
-    // tabla insertada con el botón (envuelta en .tabla-wrap) o de una tabla o
-    // lista que ya vino armada dentro de una plantilla (como el informe de
-    // Yvytu) — antes solo las primeras se protegían, y las segundas se median
-    // como un bloque gigante que se cortaba en cualquier parte.
+    // (informe-texto, indicaciones-texto). TODO bloque —párrafo, fila de tabla,
+    // ítem de lista— se mide como unidad que no se debe partir: antes los
+    // párrafos sueltos sí se dejaban cortar a la mitad si eso "aprovechaba
+    // mejor" la página, y ahí es donde se cortaban informes en medio de una
+    // oración. Ahora un párrafo entero salta completo a la página siguiente,
+    // aunque eso deje espacio en blanco.
     function agregarBloqueDeTexto(nodo) {
       const tag = nodo.tagName;
       if (tag === 'TABLE') {
@@ -1677,7 +1677,7 @@
         const nota = nodo.querySelector('.tabla-nota');
         if (nota) agregar(nota);
       } else {
-        agregar(nodo);
+        agregar(nodo, true);
       }
     }
     function agregarBloqueGenerico(contenedor) {
