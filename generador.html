@@ -798,58 +798,145 @@
   }
 
   /* Plantilla estándar del informe técnico de Yvytu Jara (aplicación aérea con
-     drones). El texto se repite casi siempre; los datos puntuales de la visita
-     van en los campos de fecha/localidad/establecimiento y en el título del
-     recetario, así que acá dejamos el cuerpo técnico fijo, editable si hace falta. */
+     drones), calcada del informe real que usan. Los datos puntuales (dirigido a,
+     empresa cliente, tipo de servicio, etc.) van en una tabla editable arriba;
+     el resto es el cuerpo técnico fijo con tablas para lo que es tabular, para
+     que no quede como pared de texto. Todo editable si hace falta. */
+  function tablaInformeHTML(filas, colWidths) {
+    const cols = colWidths || [];
+    return `<table style="width:100%;border-collapse:collapse;margin:6px 0 14px;font-size:13px;">
+      ${filas.map((fila, i) => `<tr>${fila.map((celda, j) => {
+        const tag = i === 0 ? 'th' : 'td';
+        const w = cols[j] ? ` width="${cols[j]}"` : '';
+        const bg = i === 0 ? 'background:#eef1e6;font-weight:700;text-align:left;' : '';
+        return `<${tag}${w} style="border:1px solid #b8b2a0;padding:5px 8px;${bg}">${celda}</${tag}>`;
+      }).join('')}</tr>`).join('')}
+    </table>`;
+  }
+
   function plantillaInformeYvytu() {
+    const datosTecnicos = tablaInformeHTML([
+      ['Dirigido a', '<span contenteditable="true">Nombre del contacto</span>'],
+      ['Empresa', '<span contenteditable="true">Empresa cliente</span>'],
+      ['Tipo de servicio', '<span contenteditable="true">Aplicación aérea de herbicidas / control de hormigas / etc.</span>'],
+      ['Método de trabajo', '<span contenteditable="true">Mapeo, planificación y aplicación aérea con drones</span>'],
+      ['Identificación de parcela', '<span contenteditable="true">A definir según relevamiento</span>'],
+      ['Fecha de ejecución', '<span contenteditable="true">A definir</span>'],
+      ['Operador responsable', '<span contenteditable="true">—</span>'],
+      ['Soporte técnico', '<span contenteditable="true">—</span>'],
+    ], ['30%', '70%']);
+
+    const climaticas = tablaInformeHTML([
+      ['Variable', 'Criterio operativo'],
+      ['Temperatura', '10 – 35 °C'],
+      ['Humedad relativa', '&gt; 55 %'],
+      ['Velocidad del viento', '&lt; 10 km/h'],
+      ['Estabilidad atmosférica', 'Neutra a ligeramente estable'],
+      ['Precipitación', 'Sin lluvia durante la aplicación y en el período posterior compatible con el producto utilizado'],
+    ]);
+
+    const parametros = tablaInformeHTML([
+      ['Parámetro', 'Configuración técnica'],
+      ['Altura de vuelo', '3 – 4 m'],
+      ['Velocidad de aplicación', '30 – 36 km/h'],
+      ['Ancho de labor', '7 – 8 m'],
+      ['Volumen de aplicación', '10 L/ha, ajustable según objetivo y producto'],
+      ['Tamaño de gota', '250 – 350 micrones, ajustable según tratamiento'],
+      ['Sistema de aspersión', 'Boquillas centrífugas DJI'],
+    ]);
+
+    const metodologia = tablaInformeHTML([
+      ['Etapa', 'Descripción técnica'],
+      ['1. Relevamiento y mapeo', 'Reconocimiento inicial del lote, levantamiento de información base y delimitación de la superficie de trabajo.'],
+      ['2. Diagnóstico y zonificación', 'Identificación de sectores con malezas y georreferenciación de puntos o áreas con actividad de hormigas.'],
+      ['3. Planificación de misión', 'Definición de rutas de vuelo, áreas prioritarias, ancho de labor, volumen objetivo y criterios de seguridad operacional.'],
+      ['4. Aplicación de herbicidas', 'Ejecución aérea sobre las áreas definidas para control de malezas, con parámetros adaptados al producto y objetivo de aplicación.'],
+      ['5. Control de hormigas', 'Tratamiento de los sectores identificados con actividad de hormigas mediante misión específica y producto correspondiente.'],
+      ['6. Verificación y registro', 'Monitoreo posterior, consolidación de registros operativos y determinación de posibles refuerzos localizados.'],
+    ], ['30%', '70%']);
+
     return `
+      <div class="subhead" style="margin-top:0;">Datos técnicos</div>
+      ${datosTecnicos}
+
       <p><strong>OBJETIVO GENERAL</strong><br>
-      Realizar la aplicación aérea de productos fitosanitarios mediante drones, garantizando
-      cobertura uniforme, eficiencia operativa y cumplimiento de los parámetros técnicos y
-      ambientales establecidos.</p>
+      Implementar un plan técnico integral para la aplicación aérea de herbicidas y el control
+      de hormigas mediante drones agrícolas, incorporando relevamiento previo, mapeo,
+      zonificación, planificación de misión, ejecución operativa y verificación posterior. El
+      enfoque busca intervenir con precisión las áreas problemáticas, optimizando cobertura,
+      eficiencia operativa, trazabilidad y soporte a la toma de decisiones en campo.</p>
 
-      <p><strong>OBJETIVOS ESPECÍFICOS</strong><br>
-      Ejecutar el plan de aplicación acordado con el cliente sobre la superficie definida;
-      minimizar la deriva y el impacto ambiental; asegurar la trazabilidad de la operación
-      (registro de vuelo, dosis aplicada y condiciones climáticas).</p>
+      <p><strong>OBJETIVOS ESPECÍFICOS</strong></p>
+      <ul style="margin:0 0 14px;padding-left:20px;">
+        <li>Realizar el reconocimiento y mapeo georreferenciado del área a intervenir.</li>
+        <li>Identificar y sectorizar zonas con presencia de malezas y sectores con actividad de hormigas.</li>
+        <li>Planificar misiones de vuelo diferenciadas para cada objetivo de control, definiendo rutas, volúmenes y parámetros operativos.</li>
+        <li>Ejecutar aplicaciones aéreas de precisión con foco en uniformidad de cobertura, control de deriva y seguridad operacional.</li>
+        <li>Generar registros técnicos y verificar posteriormente las áreas tratadas para evaluar continuidad o refuerzo localizado.</li>
+      </ul>
 
-      <p><strong>ALCANCE TÉCNICO</strong><br>
-      El servicio comprende la aplicación aérea con dron sobre la/las parcela(s) indicadas,
-      incluyendo relevamiento previo del área, planificación de vuelo y ejecución de la
-      aplicación conforme al producto y dosis especificados.</p>
+      <p><strong>ALCANCE TÉCNICO DEL SERVICIO</strong></p>
+      <ul style="margin:0 0 14px;padding-left:20px;">
+        <li>Relevamiento inicial y diagnóstico del lote.</li>
+        <li>Mapeo base del área y delimitación de superficie operativa.</li>
+        <li>Georreferenciación de focos, sectores o zonas prioritarias.</li>
+        <li>Planificación de rutas y misiones de vuelo.</li>
+        <li>Aplicación aérea de herbicidas en áreas definidas.</li>
+        <li>Control de hormigas mediante misión específica en los sectores identificados.</li>
+        <li>Registro, trazabilidad y emisión de informe técnico posterior.</li>
+      </ul>
 
-      <p><strong>EQUIPOS Y PLATAFORMAS</strong><br>
-      Aplicación realizada con dron agrícola equipado con sistema de pulverización y
-      navegación autónoma (RTK/GPS), con operador certificado a cargo.</p>
+      <p><strong>EQUIPOS Y PLATAFORMAS UTILIZADAS</strong></p>
+      <ul style="margin:0 0 14px;padding-left:20px;">
+        <li>DJI Mavic 3 Multiespectral – relevamiento y mapeo.</li>
+        <li>DJI Agras T70 – aplicación aérea.</li>
+        <li>DJI Terra – procesamiento y generación de mapas.</li>
+        <li>DJI SmartFarm Web – gestión, planificación y trazabilidad operativa.</li>
+      </ul>
 
-      <p><strong>CONDICIONES CLIMÁTICAS RECOMENDADAS</strong><br>
-      Velocidad de viento entre 3 y 12 km/h, humedad relativa superior al 50%, temperatura
-      inferior a 30 °C, ausencia de lluvia en las horas previas y posteriores a la aplicación.</p>
+      <div class="subhead">Condiciones climáticas recomendadas</div>
+      ${climaticas}
 
-      <p><strong>PARÁMETROS OPERACIONALES</strong><br>
-      Altura de vuelo y ancho de faja según especificaciones del equipo y del producto
-      aplicado, con solapamiento adecuado para asegurar cobertura uniforme.</p>
+      <div class="subhead">Parámetros operacionales de referencia</div>
+      ${parametros}
 
-      <p><strong>METODOLOGÍA OPERACIONAL</strong><br>
-      Relevamiento del área y carga del plan de vuelo; preparación del caldo según dosis
-      indicada; ejecución de la aplicación con monitoreo en tiempo real; verificación final
-      de cobertura.</p>
+      <div class="subhead">Metodología operacional</div>
+      ${metodologia}
 
-      <p><strong>ENTREGABLES TÉCNICOS</strong><br>
-      Registro de la aplicación (mapa de cobertura, superficie tratada, producto y dosis
-      utilizados, condiciones climáticas al momento del vuelo).</p>
+      <p><strong>ENTREGABLES TÉCNICOS</strong></p>
+      <ul style="margin:0 0 14px;padding-left:20px;">
+        <li>Mapa base y delimitación de la superficie intervenida.</li>
+        <li>Zonificación georreferenciada de las áreas de aplicación y sectores de control.</li>
+        <li>Planificación de vuelos y misiones diferenciadas por objetivo.</li>
+        <li>Registros de operación: fecha, superficie, rutas, parámetros y trazabilidad.</li>
+        <li>Reporte técnico posterior con observaciones de ejecución y recomendaciones de seguimiento.</li>
+      </ul>
 
-      <p><strong>BUENAS PRÁCTICAS AGRÍCOLAS</strong><br>
-      Aplicación conforme a las recomendaciones del fabricante del producto, respetando
-      períodos de carencia y resguardo de fuentes de agua, viviendas y zonas sensibles
-      linderas.</p>
+      <p><strong>BUENAS PRÁCTICAS AGRÍCOLAS</strong></p>
+      <ul style="margin:0 0 14px;padding-left:20px;">
+        <li>Verificación climática previa para reducir riesgos de deriva y pérdida de eficiencia.</li>
+        <li>Preparación segura de cada mezcla conforme a etiqueta, dosis recomendada y criterio técnico responsable.</li>
+        <li>Manejo adecuado de envases, residuos y remanentes de mezcla.</li>
+        <li>Control de deriva mediante selección de condiciones ambientales y parámetros de aplicación.</li>
+        <li>Trazabilidad de las operaciones mediante registros técnicos y control de misión.</li>
+      </ul>
 
       <p><strong>CONSIDERACIONES TÉCNICAS</strong><br>
-      Ante condiciones climáticas desfavorables, la aplicación podrá reprogramarse para
-      garantizar la eficacia del tratamiento y minimizar riesgos ambientales.</p>
+      El programa propuesto permite coordinar dentro de una misma intervención operativa las
+      actividades de control de malezas y control de hormigas, aprovechando el relevamiento,
+      el mapeo y la logística de drones. Las aplicaciones se organizarán por objetivo de
+      control y podrán realizarse en misiones separadas, con parámetros, productos y mezclas
+      definidos específicamente para cada tratamiento. La coordinación conjunta de ambos
+      trabajos no implica la mezcla de herbicidas e insecticidas en un mismo caldo de
+      aplicación.</p>
 
-      <p><strong>OBSERVACIONES</strong><br>
-      Sin observaciones adicionales.</p>
+      <p><strong>OBSERVACIONES</strong></p>
+      <ul style="margin:0 0 14px;padding-left:20px;">
+        <li>La cotización económica del servicio se presentará en documento independiente.</li>
+        <li>La superficie definitiva de trabajo se determinará a partir del relevamiento y mapeo del área.</li>
+        <li>Los productos, dosis y parámetros finales se definirán según malezas presentes, actividad de hormigas, condiciones del lote y recomendaciones de etiqueta.</li>
+        <li>La ejecución quedará sujeta a condiciones climáticas y operativas compatibles con aplicaciones agrícolas aéreas.</li>
+      </ul>
     `;
   }
 
@@ -1571,6 +1658,28 @@
       if (r.height <= 0) return;
       unidades.push({ top: r.top - recetaTop, bottom: r.bottom - recetaTop, evitarCorte: !!evitarCorte });
     }
+    // Un bloque suelto (párrafo, tabla, lista) dentro de una caja de texto libre
+    // (informe-texto, indicaciones-texto). Las tablas y listas SIEMPRE se miden
+    // fila por fila / ítem por ítem (evitarCorte) sin importar si vienen de una
+    // tabla insertada con el botón (envuelta en .tabla-wrap) o de una tabla o
+    // lista que ya vino armada dentro de una plantilla (como el informe de
+    // Yvytu) — antes solo las primeras se protegían, y las segundas se median
+    // como un bloque gigante que se cortaba en cualquier parte.
+    function agregarBloqueDeTexto(nodo) {
+      const tag = nodo.tagName;
+      if (tag === 'TABLE') {
+        nodo.querySelectorAll('tr').forEach((fila) => agregar(fila, true));
+      } else if (tag === 'UL' || tag === 'OL') {
+        Array.from(nodo.children).forEach((li) => agregar(li, true));
+      } else if (nodo.classList && nodo.classList.contains('tabla-wrap')) {
+        const tabla = nodo.querySelector('table');
+        if (tabla) tabla.querySelectorAll('tr').forEach((fila) => agregar(fila, true));
+        const nota = nodo.querySelector('.tabla-nota');
+        if (nota) agregar(nota);
+      } else {
+        agregar(nodo);
+      }
+    }
     function agregarBloqueGenerico(contenedor) {
       Array.from(contenedor.children).forEach((hijo) => {
         if (hijo.classList.contains('tabla-wrap')) {
@@ -1582,6 +1691,10 @@
           }
         } else if (hijo.classList.contains('campo-grid')) {
           Array.from(hijo.children).forEach((sub) => agregar(sub, true));
+        } else if (hijo.tagName === 'TABLE') {
+          hijo.querySelectorAll('tr').forEach((fila) => agregar(fila, true));
+        } else if (hijo.tagName === 'UL' || hijo.tagName === 'OL') {
+          Array.from(hijo.children).forEach((li) => agregar(li, true));
         } else {
           agregar(hijo, true);
         }
@@ -1596,7 +1709,7 @@
       const informeTexto = receta.querySelector('#informe-texto');
       if (informeTexto) {
         if (informeTexto.children.length) {
-          Array.from(informeTexto.children).forEach((nodo) => agregar(nodo));
+          Array.from(informeTexto.children).forEach((nodo) => agregarBloqueDeTexto(nodo));
         } else if (informeTexto.textContent.trim()) {
           agregar(informeTexto);
         }
@@ -1613,7 +1726,7 @@
       const indicacionesTexto = receta.querySelector('#indicaciones-texto');
       if (indicacionesTexto) {
         if (indicacionesTexto.children.length) {
-          Array.from(indicacionesTexto.children).forEach((nodo) => agregar(nodo));
+          Array.from(indicacionesTexto.children).forEach((nodo) => agregarBloqueDeTexto(nodo));
         } else if (indicacionesTexto.textContent.trim()) {
           agregar(indicacionesTexto);
         }
