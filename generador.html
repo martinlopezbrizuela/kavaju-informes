@@ -1658,6 +1658,12 @@
       if (r.height <= 0) return;
       unidades.push({ top: r.top - recetaTop, bottom: r.bottom - recetaTop, evitarCorte: !!evitarCorte });
     }
+    function agregarRango(topEl, bottomEl, evitarCorte) {
+      const rTop = topEl.getBoundingClientRect();
+      const rBottom = bottomEl.getBoundingClientRect();
+      if (rBottom.bottom - rTop.top <= 0) return;
+      unidades.push({ top: rTop.top - recetaTop, bottom: rBottom.bottom - recetaTop, evitarCorte: !!evitarCorte });
+    }
     // Un bloque suelto (párrafo, tabla, lista) dentro de una caja de texto libre
     // (informe-texto, indicaciones-texto). TODO bloque —párrafo, fila de tabla,
     // ítem de lista— se mide como unidad que no se debe partir: antes los
@@ -1679,6 +1685,44 @@
       } else {
         agregar(nodo, true);
       }
+    }
+    // Además de no partir un párrafo, tampoco queremos que un título numerado
+    // ("4. CONTROL DE PARÁSITOS INTERNOS") quede solo al final de una página
+    // con sus párrafos recién en la página siguiente — eso se lee mal aunque
+    // técnicamente ninguna oración se haya cortado. Por eso agrupamos cada
+    // título numerado junto con TODOS sus párrafos siguientes (hasta el
+    // próximo título, o hasta una tabla/lista) en una sola unidad que salta
+    // entera de página si no entra completa.
+    const RE_ENCABEZADO_NUMERADO = /^\s*\d+(\.\d+)*\.\s+\S/;
+    function agregarSeccionesDeTexto(contenedor) {
+      const hijos = Array.from(contenedor.children);
+      let grupo = null; // array de nodos del título+párrafos actuales
+      function cerrarGrupo() {
+        if (!grupo) return;
+        if (grupo.length === 1) agregar(grupo[0], true);
+        else agregarRango(grupo[0], grupo[grupo.length - 1], true);
+        grupo = null;
+      }
+      hijos.forEach((nodo) => {
+        const tag = nodo.tagName;
+        const esTablaOLista = tag === 'TABLE' || tag === 'UL' || tag === 'OL'
+          || (nodo.classList && nodo.classList.contains('tabla-wrap'));
+        if (esTablaOLista) {
+          cerrarGrupo();
+          agregarBloqueDeTexto(nodo);
+          return;
+        }
+        const texto = (nodo.textContent || '').trim();
+        if (RE_ENCABEZADO_NUMERADO.test(texto)) {
+          cerrarGrupo();
+          grupo = [nodo];
+        } else if (grupo) {
+          grupo.push(nodo);
+        } else {
+          agregar(nodo, true);
+        }
+      });
+      cerrarGrupo();
     }
     function agregarBloqueGenerico(contenedor) {
       Array.from(contenedor.children).forEach((hijo) => {
@@ -1709,7 +1753,7 @@
       const informeTexto = receta.querySelector('#informe-texto');
       if (informeTexto) {
         if (informeTexto.children.length) {
-          Array.from(informeTexto.children).forEach((nodo) => agregarBloqueDeTexto(nodo));
+          agregarSeccionesDeTexto(informeTexto);
         } else if (informeTexto.textContent.trim()) {
           agregar(informeTexto);
         }
@@ -1726,7 +1770,7 @@
       const indicacionesTexto = receta.querySelector('#indicaciones-texto');
       if (indicacionesTexto) {
         if (indicacionesTexto.children.length) {
-          Array.from(indicacionesTexto.children).forEach((nodo) => agregarBloqueDeTexto(nodo));
+          agregarSeccionesDeTexto(indicacionesTexto);
         } else if (indicacionesTexto.textContent.trim()) {
           agregar(indicacionesTexto);
         }
