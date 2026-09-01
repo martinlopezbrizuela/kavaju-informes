@@ -1817,34 +1817,39 @@
       const altoTotalPx = receta.getBoundingClientRect().height;
       const anchoElementoPx = receta.scrollWidth;
 
-      // El PDF sale como UNA sola página, del alto que haga falta, sin
-      // "páginas A4" de por medio — así al abrirlo (WhatsApp, Fotos, etc.)
-      // se ve todo corrido, sin bordes de página ni huecos en blanco entre
-      // una y otra. Igual lo capturamos en franjas altas en vez de un único
-      // canvas gigante: Safari en iPad tiene un límite de tamaño de canvas y
-      // un informe largo lo superaba, devolviendo el canvas recortado sin
-      // avisar (por eso el PDF salía incompleto). Cada franja sigue evitando
-      // cortar filas de tabla, ítems de lista o párrafos por la mitad, pero
-      // como ya no hay "página" de por medio, no queda espacio en blanco.
-      const pageWidthMm = 210; // ancho A4, fijo
-      const pxPorMm = anchoElementoPx / pageWidthMm;
-      const altoTotalMm = altoTotalPx / pxPorMm;
-      const ALTURA_FRANJA_PX = 3200; // conservador para no chocar el límite de canvas de Safari
-      const franjas = calcularCortesDePagina(unidades, ALTURA_FRANJA_PX, altoTotalPx);
-
+      // Páginas A4 estándar: es lo que cualquier lector de PDF (WhatsApp,
+      // Archivos, Adobe, etc.) sabe mostrar de forma predecible. Probamos una
+      // sola página gigante para evitar los saltos de página, pero varios
+      // lectores la trocean solos al mostrarla en pantalla por no ser un
+      // tamaño de página estándar — así que volvemos a A4. Lo que sí queda
+      // resuelto: dentro de cada página, NUNCA se corta una fila de tabla,
+      // un ítem de lista o un párrafo a la mitad — si no entra completo,
+      // salta entero a la página siguiente.
       const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: [pageWidthMm, altoTotalMm] });
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidthMm = pdf.internal.pageSize.getWidth();
+      const pageHeightMm = pdf.internal.pageSize.getHeight();
+      const pxPorMm = anchoElementoPx / pageWidthMm;
+      const alturaPaginaPx = pageHeightMm * pxPorMm;
 
-      for (let idx = 0; idx < franjas.length; idx++) {
-        const franja = franjas[idx];
-        const altoFranja = franja.fin - franja.inicio;
-        const canvasFranja = await html2canvas(receta, {
+      const paginas = calcularCortesDePagina(unidades, alturaPaginaPx, altoTotalPx);
+
+      // NO rasterizamos el informe completo en un solo canvas gigante: en
+      // iPad/iOS, Safari tiene un límite de tamaño de canvas — un informe
+      // largo lo superaba y Safari devolvía el canvas recortado sin avisar,
+      // por eso el PDF salía incompleto. Generamos una captura por página
+      // (tamaño A4), muy por debajo de ese límite sin importar cuán largo
+      // sea el informe.
+      for (let idx = 0; idx < paginas.length; idx++) {
+        const pag = paginas[idx];
+        if (idx > 0) pdf.addPage();
+        const altoPagina = pag.fin - pag.inicio;
+        const canvasPagina = await html2canvas(receta, {
           scale, backgroundColor: '#ffffff', useCORS: true,
-          x: 0, y: franja.inicio, width: anchoElementoPx, height: altoFranja,
+          x: 0, y: pag.inicio, width: anchoElementoPx, height: altoPagina,
         });
-        const yMm = franja.inicio / pxPorMm;
-        const altoMm = altoFranja / pxPorMm;
-        pdf.addImage(canvasFranja.toDataURL('image/png'), 'PNG', 0, yMm, pageWidthMm, altoMm);
+        const altoMm = altoPagina / pxPorMm;
+        pdf.addImage(canvasPagina.toDataURL('image/png'), 'PNG', 0, 0, pageWidthMm, altoMm);
       }
 
       return pdf.output('blob');
