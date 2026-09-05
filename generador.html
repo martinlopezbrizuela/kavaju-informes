@@ -130,6 +130,9 @@
   .pres-total-barra{ display:flex; justify-content:flex-end; align-items:center; gap:12px; background:var(--marron); color:var(--crema); border-radius:10px; padding:10px 18px; margin:6px 0 18px; font-family:'Montserrat',sans-serif; }
   .pres-total-barra .lbl3{ font-weight:700; font-size:13px; letter-spacing:.04em; text-transform:uppercase; }
   .pres-total-barra .val3{ font-weight:800; font-size:19px; }
+  .pres-pie-empresa{ text-align:center; margin-top:18px; padding-top:12px; border-top:1.5px solid var(--borde); }
+  .pres-pie-nombre{ font-family:'Montserrat',sans-serif; font-weight:800; font-size:14px; letter-spacing:.05em; color:var(--marron); text-transform:uppercase; }
+  .pres-pie-tagline{ font-size:12px; color:var(--marron-suave); margin-top:2px; }
   .tabla-dosis td[data-num="1"], .tabla-dosis th[data-num="1"]{ text-align:right; }
   .field-row .ico{ width:34px; height:34px; border-radius:9px; background:var(--marron); color:var(--crema); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .field-row .ico svg{ width:18px; height:18px; }
@@ -609,7 +612,7 @@
       footer: [],
       nombreArchivo: 'receta-agroforce',
       informe: { activo:false, tipo:'pastura', titulo:'INFORME DE PASTURA', placeholder:'Escribí acá el informe de revisión de pastura (potreros relevados, estado, recomendaciones)...', anexoFotos:true, anexoTitulo:'ANEXO — IMÁGENES DE LOS POTREROS' },
-      presupuesto: { disponible:true, activo:false },
+      presupuesto: { disponible:true, activo:false, pieTagline:'Manejo Eficiente de Pasturas' },
     },
     tampa: {
       nombre: 'Tampa',
@@ -809,6 +812,12 @@
   }
   function campoParrafo(id, ph) {
     return `<div class="campo-parrafo" id="${id}" contenteditable="true" data-ph="${ph || 'Escribí acá...'}"></div>`;
+  }
+  // Igual que campoParrafo, pero arranca con un texto ya cargado (editable si hace
+  // falta corregirlo) en vez de un placeholder vacío — para textos que casi
+  // siempre son los mismos, como las condiciones comerciales estándar.
+  function campoParrafoConTexto(id, textoInicialHtml) {
+    return `<div class="campo-parrafo" id="${id}" contenteditable="true">${textoInicialHtml}</div>`;
   }
   // Celda de dato dentro del cuadro tipo factura (etiqueta + valor con bordes)
   function celdaEtiqueta(lbl) {
@@ -1091,6 +1100,14 @@
      igual a los PRES-00xx que ya se generaban): datos del cliente, tabla
      de productos con Total por fila calculado, y total general automático.
   ====================================================================== */
+  // Texto estándar de condiciones comerciales del presupuesto: siempre arranca
+  // completo (validez + condiciones de pago), no como placeholder para escribir
+  // de cero. Se puede corregir a mano si un caso puntual lo necesita.
+  const TEXTO_CONDICIONES_COMERCIALES_DEFAULT =
+    'Validez: 15 días.<br><br>' +
+    'Condiciones de pago: El plazo estándar de financiación será de hasta 30 (treinta) días, sujeto a evaluación y aprobación comercial del cliente.<br><br>' +
+    'Para operaciones con plazos superiores a 30 días, será requisito contar con cheque diferido o pagaré firmado, respaldado por el correspondiente contrato previamente suscrito entre las partes.';
+
   function construirPresupuesto() {
     const cont = document.getElementById('presupuesto-contenido');
     cont.dataset.armado = '1';
@@ -1104,8 +1121,7 @@
         <tbody>
           <tr>${celdaEtiqueta('Cliente')}${celdaValor('pres-cliente')}${celdaEtiqueta('RUC / C.I.')}${celdaValor('pres-ruc','—')}</tr>
           <tr>${celdaEtiqueta('Establecimiento')}${celdaValor('pres-establecimiento')}${celdaEtiqueta('Localidad')}${celdaValor('pres-localidad')}</tr>
-          <tr>${celdaEtiqueta('Superficie')}${celdaValor('pres-superficie','Ej: 150 hectáreas')}${celdaEtiqueta('Superficie (ha)')}${celdaValor('pres-superficie-ha','Ej: 150')}</tr>
-          <tr>${celdaEtiqueta('Moneda')}${celdaValor('pres-moneda','Guaraníes / Dólares')}${celdaEtiqueta('Validez')}${celdaValor('pres-validez','Ej: 15 días')}</tr>
+          <tr>${celdaEtiqueta('Superficie (ha)')}${celdaValor('pres-superficie-ha','Ej: 150')}${celdaEtiqueta('Moneda')}${celdaValor('pres-moneda','Guaraníes / Dólares')}</tr>
           <tr>${celdaEtiqueta('Trabajo a realizar')}${celdaValor('pres-trabajo','Descripción del trabajo a realizar...', 3)}</tr>
         </tbody>
       </table>
@@ -1123,10 +1139,12 @@
       </div>
 
       <div class="subhead">Condiciones comerciales</div>
-      ${campoParrafo('pres-condiciones', 'Ej: Oferta válida por 15 días. Valores expresados en... Documento no válido como comprobante fiscal...')}
+      ${campoParrafoConTexto('pres-condiciones', TEXTO_CONDICIONES_COMERCIALES_DEFAULT)}
 
-      <div class="subhead">Observaciones</div>
-      ${campoParrafo('pres-observaciones', 'Condiciones de pago, forma de entrega, etc...')}
+      <div class="pres-pie-empresa no-print-pie">
+        <div class="pres-pie-nombre">${e.nombre}</div>
+        ${e.presupuesto.pieTagline ? `<div class="pres-pie-tagline">${e.presupuesto.pieTagline}</div>` : ''}
+      </div>
     `;
     crearTabla(
       ['Producto', 'Presentación', 'Dosis / ha', 'Cantidad', 'Precio unit.', 'Total'],
@@ -1138,14 +1156,15 @@
 
   /* Presupuesto simplificado para Yvytu Jara: precio fijo por hectárea */
   function construirPresupuestoFijoHa(cont) {
+    const e = EMPRESAS[empresaActual];
     cont.innerHTML = `
       <table class="pres-datos-tabla">
         <tbody>
           <tr>${celdaEtiqueta('Cliente')}${celdaValor('pres-cliente')}${celdaEtiqueta('RUC / C.I.')}${celdaValor('pres-ruc','—')}</tr>
           <tr>${celdaEtiqueta('Establecimiento')}${celdaValor('pres-establecimiento')}${celdaEtiqueta('Localidad')}${celdaValor('pres-localidad')}</tr>
-          <tr>${celdaEtiqueta('Moneda')}${celdaValor('pres-moneda','Guaraníes / Dólares')}${celdaEtiqueta('Validez')}${celdaValor('pres-validez','Ej: 15 días')}</tr>
+          <tr>${celdaEtiqueta('Moneda')}${celdaValor('pres-moneda','Guaraníes / Dólares')}${celdaEtiqueta('Superficie (ha)')}${celdaValor('pres-superficie-ha','Ej: 150')}</tr>
           <tr>${celdaEtiqueta('Servicio a realizar')}${celdaValor('pres-trabajo','Ej: Aplicación aérea con dron...', 3)}</tr>
-          <tr>${celdaEtiqueta('Superficie (ha)')}${celdaValor('pres-superficie-ha','Ej: 150')}${celdaEtiqueta('Precio / ha')}${celdaValor('pres-precio-ha','Ej: 45.00')}</tr>
+          <tr>${celdaEtiqueta('Precio / ha')}${celdaValor('pres-precio-ha','Ej: 45.00', 3)}</tr>
         </tbody>
       </table>
 
@@ -1155,10 +1174,12 @@
       </div>
 
       <div class="subhead">Condiciones comerciales</div>
-      ${campoParrafo('pres-condiciones', 'Ej: Oferta válida por 15 días. Valores expresados en... Documento no válido como comprobante fiscal...')}
+      ${campoParrafoConTexto('pres-condiciones', TEXTO_CONDICIONES_COMERCIALES_DEFAULT)}
 
-      <div class="subhead">Observaciones</div>
-      ${campoParrafo('pres-observaciones', 'Condiciones de pago, forma de entrega, etc...')}
+      <div class="pres-pie-empresa no-print-pie">
+        <div class="pres-pie-nombre">${e.nombre}</div>
+        ${e.presupuesto.pieTagline ? `<div class="pres-pie-tagline">${e.presupuesto.pieTagline}</div>` : ''}
+      </div>
     `;
     recalcularTotalFijoHa();
   }
