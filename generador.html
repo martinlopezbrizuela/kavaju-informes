@@ -1804,11 +1804,15 @@
 
   function calcularCortesDePagina(unidades, alturaPaginaPx, altoTotalPx) {
     // Vamos avanzando de a una página por vez. Si el corte natural (una página
-    // completa más adelante) cae justo en medio de una unidad (un párrafo o una
-    // fila de tabla), lo retrocedemos hasta donde empieza esa unidad — pero SOLO
-    // si eso no deja la página casi vacía. Si retroceder desperdiciaría demasiado
-    // espacio, preferimos cortar ahí nomás (se ve mejor una página bien
-    // aprovechada con un corte imperfecto, que media página en blanco).
+    // completa más adelante) cae justo en medio de una unidad (un párrafo, una
+    // fila de tabla, un ítem de lista, o una sección entera título+párrafos),
+    // lo retrocedemos hasta donde empieza esa unidad para no partirla — pero
+    // SOLO si eso desperdicia poco espacio. El límite es chico a propósito:
+    // ahora que las secciones completas (título + todos sus párrafos) también
+    // viajan como una sola unidad, una tolerancia alta dejaba páginas casi
+    // vacías cada vez que una sección larga no entraba entera. Es preferible
+    // un corte imperfecto (que siga en la página siguiente) a un hueco enorme.
+    const MAX_DESPERDICIO = 0.12; // como mucho, perdemos el 12% de una página para evitar un corte feo
     const paginas = [];
     let inicio = 0;
     let guardaInfinito = 0;
@@ -1817,12 +1821,10 @@
       let fin = Math.min(inicio + alturaPaginaPx, altoTotalPx);
       for (const u of unidades) {
         if (u.top < fin - 0.5 && u.bottom > fin + 0.5) {
-          // El corte natural cae en medio de esta unidad.
-          const esFilaDeTabla = !!u.evitarCorte;
-          // Para una fila de tabla toleramos perder bastante más espacio con tal
-          // de no partirla (se ve muy mal); para un párrafo suelto, mucho menos.
-          const minimoAceptable = alturaPaginaPx * (esFilaDeTabla ? 0.15 : 0.65);
-          if (u.top - inicio >= minimoAceptable) {
+          // El corte natural cae en medio de esta unidad: sólo retrocedemos si
+          // el espacio que perdemos al hacerlo es chico.
+          const espacioPerdido = fin - u.top;
+          if (espacioPerdido <= alturaPaginaPx * MAX_DESPERDICIO) {
             fin = u.top;
           }
           break;
