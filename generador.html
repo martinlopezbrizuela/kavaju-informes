@@ -117,6 +117,16 @@
   body.exportando-pdf .campo-parrafo:empty:before,
   #vista-previa-receta .campo-row .val2:empty:before,
   #vista-previa-receta .campo-parrafo:empty:before{ content:'' !important; }
+  /* ---------- Cuadro de datos del presupuesto, estilo factura (con bordes) ---------- */
+  .pres-datos-tabla{ width:100%; border-collapse:collapse; margin:0 0 14px; border:1.5px solid var(--marron); }
+  .pres-datos-tabla td{ border:1px solid var(--borde); padding:7px 10px; font-size:13.5px; outline:none; vertical-align:top; }
+  .pres-datos-tabla td.pres-etiqueta{
+    background:#eef1e6; font-family:'Montserrat',sans-serif; font-weight:700; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:.03em; color:var(--marron-suave); width:1%; white-space:nowrap;
+  }
+  .pres-datos-tabla td.pres-celda:empty:before{ content: attr(data-ph); color:#a99; opacity:.55; font-weight:400; text-transform:none; letter-spacing:0; font-size:13.5px; }
+  body.exportando-pdf .pres-datos-tabla td.pres-celda:empty:before,
+  #vista-previa-receta .pres-datos-tabla td.pres-celda:empty:before{ content:'' !important; }
   .pres-total-barra{ display:flex; justify-content:flex-end; align-items:center; gap:12px; background:var(--marron); color:var(--crema); border-radius:10px; padding:10px 18px; margin:6px 0 18px; font-family:'Montserrat',sans-serif; }
   .pres-total-barra .lbl3{ font-weight:700; font-size:13px; letter-spacing:.04em; text-transform:uppercase; }
   .pres-total-barra .val3{ font-weight:800; font-size:19px; }
@@ -796,6 +806,14 @@
   function campoParrafo(id, ph) {
     return `<div class="campo-parrafo" id="${id}" contenteditable="true" data-ph="${ph || 'Escribí acá...'}"></div>`;
   }
+  // Celda de dato dentro del cuadro tipo factura (etiqueta + valor con bordes)
+  function celdaEtiqueta(lbl) {
+    return `<td class="pres-etiqueta">${lbl}</td>`;
+  }
+  function celdaValor(id, ph, colspan) {
+    const cs = colspan ? ` colspan="${colspan}"` : '';
+    return `<td class="pres-celda" id="${id}" contenteditable="true" data-ph="${ph || '—'}"${cs}></td>`;
+  }
 
   /* Plantilla estándar del informe técnico de Yvytu Jara (aplicación aérea con
      drones), calcada del informe real que usan. Los datos puntuales (dirigido a,
@@ -1078,17 +1096,15 @@
       return;
     }
     cont.innerHTML = `
-      <div class="campo-grid" style="margin-bottom:6px;">
-        ${campoRow('pres-cliente','Cliente')}
-        ${campoRow('pres-ruc','RUC / C.I.', '—')}
-        ${campoRow('pres-establecimiento','Establecimiento')}
-        ${campoRow('pres-localidad','Localidad')}
-        ${campoRow('pres-superficie','Superficie (texto)', 'Ej: 150 hectáreas')}
-        ${campoRow('pres-superficie-ha','Superficie a tratar (ha, numérico)', 'Ej: 150')}
-        ${campoRow('pres-moneda','Moneda', 'Guaraníes / Dólares (USD)')}
-        ${campoRow('pres-validez','Validez', 'Ej: 15 días')}
-      </div>
-      ${campoRow('pres-trabajo','Trabajo a realizar', 'Descripción del trabajo a realizar...')}
+      <table class="pres-datos-tabla">
+        <tbody>
+          <tr>${celdaEtiqueta('Cliente')}${celdaValor('pres-cliente')}${celdaEtiqueta('RUC / C.I.')}${celdaValor('pres-ruc','—')}</tr>
+          <tr>${celdaEtiqueta('Establecimiento')}${celdaValor('pres-establecimiento')}${celdaEtiqueta('Localidad')}${celdaValor('pres-localidad')}</tr>
+          <tr>${celdaEtiqueta('Superficie')}${celdaValor('pres-superficie','Ej: 150 hectáreas')}${celdaEtiqueta('Superficie (ha)')}${celdaValor('pres-superficie-ha','Ej: 150')}</tr>
+          <tr>${celdaEtiqueta('Moneda')}${celdaValor('pres-moneda','Guaraníes / Dólares')}${celdaEtiqueta('Validez')}${celdaValor('pres-validez','Ej: 15 días')}</tr>
+          <tr>${celdaEtiqueta('Trabajo a realizar')}${celdaValor('pres-trabajo','Descripción del trabajo a realizar...', 3)}</tr>
+        </tbody>
+      </table>
 
       <div class="subhead" style="margin-top:16px;">Productos incluidos</div>
       <p class="hint" style="margin:0 0 8px;">Cargá "Dosis/ha" en cada producto y la cantidad se sugiere sola a partir de la superficie de arriba (la podés corregir a mano si el envase no da un número exacto).</p>
@@ -1119,21 +1135,15 @@
   /* Presupuesto simplificado para Yvytu Jara: precio fijo por hectárea */
   function construirPresupuestoFijoHa(cont) {
     cont.innerHTML = `
-      <div class="campo-grid" style="margin-bottom:6px;">
-        ${campoRow('pres-cliente','Cliente')}
-        ${campoRow('pres-ruc','RUC / C.I.', '—')}
-        ${campoRow('pres-establecimiento','Establecimiento')}
-        ${campoRow('pres-localidad','Localidad')}
-        ${campoRow('pres-moneda','Moneda', 'Guaraníes / Dólares (USD)')}
-        ${campoRow('pres-validez','Validez', 'Ej: 15 días')}
-      </div>
-      ${campoRow('pres-trabajo','Servicio a realizar', 'Ej: Aplicación aérea con dron — herbicida / insecticida...')}
-
-      <div class="subhead" style="margin-top:16px;">Cálculo del servicio</div>
-      <div class="campo-grid">
-        ${campoRow('pres-superficie-ha','Superficie a tratar (ha)', 'Ej: 150')}
-        ${campoRow('pres-precio-ha','Precio por hectárea', 'Ej: 45.00')}
-      </div>
+      <table class="pres-datos-tabla">
+        <tbody>
+          <tr>${celdaEtiqueta('Cliente')}${celdaValor('pres-cliente')}${celdaEtiqueta('RUC / C.I.')}${celdaValor('pres-ruc','—')}</tr>
+          <tr>${celdaEtiqueta('Establecimiento')}${celdaValor('pres-establecimiento')}${celdaEtiqueta('Localidad')}${celdaValor('pres-localidad')}</tr>
+          <tr>${celdaEtiqueta('Moneda')}${celdaValor('pres-moneda','Guaraníes / Dólares')}${celdaEtiqueta('Validez')}${celdaValor('pres-validez','Ej: 15 días')}</tr>
+          <tr>${celdaEtiqueta('Servicio a realizar')}${celdaValor('pres-trabajo','Ej: Aplicación aérea con dron...', 3)}</tr>
+          <tr>${celdaEtiqueta('Superficie (ha)')}${celdaValor('pres-superficie-ha','Ej: 150')}${celdaEtiqueta('Precio / ha')}${celdaValor('pres-precio-ha','Ej: 45.00')}</tr>
+        </tbody>
+      </table>
 
       <div class="pres-total-barra">
         <span class="lbl3">Total general</span>
